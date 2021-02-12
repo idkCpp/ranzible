@@ -1,0 +1,19 @@
+
+role host_facts () {
+	variable host os: "{{ ansible_facts['distribution'] }}{{ ansible_facts['distribution_major_version'] }}";
+	variable host centos7: os == 'CentOS7', oel8: 'OracleLinux8';
+}
+
+role security([str] service, [str] src: null)
+depends on host_facts()
+{
+	if (centos7) {
+		if (service == 'ssh') {
+			"Check if host ip is present" module shell(cmd: 'grep ...') register block 'check_host_present';
+			"Check if host has managed block" module shell(cmd: 'grep ...') register block 'check_host_managed';
+			when (check_host_managed.rc == 0 or check_host_present.rc != 0) {
+				"Enter host in hosts.allow" module blockinfile(path: '/etc/hosts.allow', create: true, marker: '# {mark} ...', content: '...');
+			}
+		}
+	}
+}
